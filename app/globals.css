@@ -1,26 +1,104 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #0d1117;
+  --accent-blue: #3b82f6;
+  --accent-blue-light: #60a5fa;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-primary);
+  color: white;
+  overflow-x: hidden;
+}
+
+/* Star particle animations */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.1; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes twinkle-slow {
+  0%, 100% { opacity: 0.05; }
+  50% { opacity: 0.7; }
+}
+
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: white;
+  pointer-events: none;
+}
+
+.star-sm {
+  width: 1px;
+  height: 1px;
+  animation: twinkle-slow var(--duration, 4s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.star-md {
+  width: 2px;
+  height: 2px;
+  animation: twinkle var(--duration, 3s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.star-lg {
+  width: 3px;
+  height: 3px;
+  animation: twinkle var(--duration, 2s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.4);
+}
+
+/* Orbital ring glow — 2D flat circle (legacy, not used in 3D layout) */
+.orbital-ring {
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  border-radius: 50%;
+  box-shadow:
+    0 0 30px rgba(59, 130, 246, 0.06),
+    inset 0 0 30px rgba(59, 130, 246, 0.03);
+  pointer-events: none;
+}
+
+/*
+ * 3D orbital ring — an ellipse matching the projected tilt.
+ * Width : ORBIT_RADIUS_X * 2 = 520px
+ * Height: ORBIT_RADIUS_Y * 2 = 180px  (compressed to ~35% of width)
+ * The near half (bottom) glows brighter than the far half (top) to reinforce depth.
+ */
+.orbital-ring-3d {
+  border-radius: 50%;
+  /* Two-tone border: bright on the bottom (near), dim on top (far). */
+  border: 1px solid transparent;
+  background:
+    /* Bright arc at bottom (front) fading to dim at top (back) */
+    linear-gradient(#0a0a0f, #0a0a0f) padding-box,
+    linear-gradient(
+      to bottom,
+      rgba(59, 130, 246, 0.08) 0%,
+      rgba(59, 130, 246, 0.35) 50%,
+      rgba(59, 130, 246, 0.08) 100%
+    ) border-box;
+  box-shadow:
+    0 6px 24px rgba(59, 130, 246, 0.08),
+    0 -2px 8px rgba(59, 130, 246, 0.03);
+  pointer-events: none;
+}
+
+/* Orbital node glow */
+.node-glow {
+  box-shadow:
+    0 0 12px rgba(59, 130, 246, 0.4),
+    0 0 24px rgba(59, 130, 246, 0.15),
+    inset 0 0 8px rgba(59, 130, 246, 0.1);
+}
+
+.node-glow:hover {
+  box-shadow:
+    0 0 20px rgba(96, 165, 250, 0.65),
+    0 0 40px rgba(96, 165, 250, 0.25),
+    inset 0 0 14px rgba(96, 165, 250, 0.15);
 }

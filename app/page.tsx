@@ -1,65 +1,91 @@
-import Image from "next/image";
+'use client'
+
+import { useRef, useState, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import NavBar from '@/components/NavBar'
+import OrbitalHero, { type OrbitalHeroHandle, type NodeId } from '@/components/OrbitalHero'
+import ExperienceCard from '@/components/cards/ExperienceCard'
+import ProjectsCard from '@/components/cards/ProjectsCard'
+import ContactCard from '@/components/cards/ContactCard'
+import LinksCard from '@/components/cards/LinksCard'
 
 export default function Home() {
+  const orbitalRef = useRef<OrbitalHeroHandle>(null)
+  const sectionRef = useRef<HTMLDivElement>(null)
+  const [activeNode, setActiveNode] = useState<NodeId | null>(null)
+  const [scrollTick, setScrollTick] = useState(0)
+  const rafRef = useRef<number | null>(null)
+
+  // Eased scroll to a target position over `duration` ms.
+  const smoothScrollTo = useCallback((target: number, duration: number) => {
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+    const start     = window.scrollY
+    const distance  = target - start
+    const startTime = performance.now()
+
+    // Ease in-out cubic
+    function ease(t: number) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+    }
+
+    function tick(now: number) {
+      const elapsed  = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      window.scrollTo(0, start + distance * ease(progress))
+      if (progress < 1) rafRef.current = requestAnimationFrame(tick)
+    }
+
+    rafRef.current = requestAnimationFrame(tick)
+  }, [])
+
+  const handleNodeChange = (id: NodeId | null) => {
+    setActiveNode(id)
+    if (id !== null) setScrollTick((n) => n + 1)
+  }
+
+  // After orbit rotation finishes, slowly scroll down to the section.
+  useEffect(() => {
+    if (!activeNode) return
+    const t = setTimeout(() => {
+      const top = sectionRef.current?.getBoundingClientRect().top ?? 0
+      smoothScrollTo(window.scrollY + top, 1400)
+    }, 950)
+    return () => clearTimeout(t)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollTick])
+
+  // Scroll back to top when node is cleared.
+  useEffect(() => {
+    if (activeNode === null) smoothScrollTo(0, 1000)
+  }, [activeNode, smoothScrollTo])
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="bg-[#0a0a0f] overflow-x-hidden">
+      <NavBar onSelectNode={(node) => orbitalRef.current?.selectNode(node)} />
+
+      <OrbitalHero ref={orbitalRef} onNodeChange={handleNodeChange} />
+
+      {/* Persistent section — always in the DOM when a node is active so
+          sectionRef is stable and scrollIntoView always has a real target. */}
+      <div ref={sectionRef}>
+        <AnimatePresence mode="wait">
+          {activeNode && (
+            <motion.section
+              key={activeNode}
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 24 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="min-h-screen flex items-start justify-center px-6 md:px-16 py-24 border-t border-white/5"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+              {activeNode === 'experience' && <ExperienceCard />}
+              {activeNode === 'projects'   && <ProjectsCard />}
+              {activeNode === 'contact'    && <ContactCard />}
+              {activeNode === 'links'      && <LinksCard />}
+            </motion.section>
+          )}
+        </AnimatePresence>
+      </div>
+    </main>
+  )
 }
